@@ -1,6 +1,33 @@
+import re
+from django.db import models 
 import bcrypt
-from django.db import models
 
+class UserManager(models.Manager):
+    def basic_validator(self, postData):
+        error = {}
+        email_regex = re.compile(r'^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]+$')
+        password_regex =re.compile(r'^[a-zA-Z0-9.+_-]')
+        special_symbols = ['$','@','#','%','^','&']
+        if len(postData['first_name']) < 3 :
+            error['first_name'] = "first name should be at least 3 characters"
+        if len(postData['last_name']) < 3 :
+            error['last_name'] = "last name should be at least 3 characters"
+        if not email_regex.match(postData['email']) :
+            error['email'] = "invaild email"
+        if len(postData['password']) < 6:
+            error['password_less_than'] = "Password must have atleast 6 characters"
+        if len(postData['password']) > 20 :
+            error['password_grather_than'] = "'Password cannot have more than 20 characters"
+        if not any(characters.isupper() for characters in postData['password']):
+            error['password_notInclude_upper'] = "Password must have at least one uppercase character"
+        if not any(characters.islower() for characters in postData['password']):
+            error['password_notInclude_lower'] = "Password must have at least one lowercase character"
+        if not any(characters.isdigit() for characters in postData['password']):
+            error['password_notInclude_number'] = "Password must have at least one numeric character."
+        if not any(characters in special_symbols for characters in postData['password']):
+            error['password_symbol'] = "Password should have at least one of the symbols $@#%^&"
+        
+        return error
 
 class User(models.Model):
     first_name = models.CharField(max_length=255)
@@ -9,6 +36,7 @@ class User(models.Model):
     password = models.CharField(max_length=255)
     created_at=models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
+    objects = UserManager()
 
 def Register(request):
     first_name = request.POST['first_name']
